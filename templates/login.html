@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login — TaskFlow</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/auth.css" />
+</head>
+<body>
+  <div class="auth-wrapper">
+    <div class="brand">
+      <span class="brand-icon">⬡</span>
+      <span class="brand-name">TaskFlow</span>
+    </div>
+
+    <div class="card">
+      <h1>Welcome back</h1>
+      <p class="subtitle">Sign in to your workspace</p>
+
+      <div id="alert" class="alert hidden"></div>
+
+      <form id="loginForm" novalidate>
+        <div class="field">
+          <label for="email">Email</label>
+          <input type="email" id="email" placeholder="you@example.com" required />
+        </div>
+        <div class="field">
+          <label for="password">Password</label>
+          <input type="password" id="password" placeholder="••••••••" required />
+        </div>
+        <button type="submit" class="btn-primary" id="submitBtn">
+          <span class="btn-text">Sign In</span>
+          <span class="spinner hidden">◌</span>
+        </button>
+      </form>
+
+      <p class="switch-link">No account? <a href="/register">Create one →</a></p>
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById('loginForm');
+    const alert = document.getElementById('alert');
+    const submitBtn = document.getElementById('submitBtn');
+
+    function showAlert(msg, type = 'error') {
+      alert.textContent = msg;
+      alert.className = `alert ${type}`;
+    }
+
+    function setLoading(loading) {
+      submitBtn.querySelector('.btn-text').classList.toggle('hidden', loading);
+      submitBtn.querySelector('.spinner').classList.toggle('hidden', !loading);
+      submitBtn.disabled = loading;
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+
+      if (!email || !password) return showAlert('Please fill in all fields.');
+
+      setLoading(true);
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
+        });
+        const data = await res.json();
+        if (res.ok) {
+          showAlert('Logging in…', 'success');
+          setTimeout(() => window.location.href = '/dashboard', 600);
+        } else {
+          showAlert(data.error || 'Login failed.');
+        }
+      } catch {
+        showAlert('Network error. Try again.');
+      } finally {
+        setLoading(false);
+      }
+    });
+  </script>
+</body>
+</html>

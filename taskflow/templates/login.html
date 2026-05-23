@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Login | TaskFlow{% endblock %}
+{% block content %}
+<main class="auth-layout">
+    <section class="auth-panel">
+        <div class="auth-brand">
+            <span class="brand-chip">Smart Task Management System</span>
+            <h1>Welcome back to TaskFlow</h1>
+            <p>Track priorities, complete work faster, and watch your analytics update live.</p>
+        </div>
+        <form class="glass-form" action="{{ url_for('auth.login_post') }}" method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <label>
+                <span>Email</span>
+                <input type="email" name="email" placeholder="you@example.com" required>
+            </label>
+            <label>
+                <span>Password</span>
+                <input type="password" name="password" placeholder="Enter your password" required>
+            </label>
+            <button type="submit" class="btn btn-primary">Login</button>
+        </form>
+        <p class="auth-foot">New here? <a href="{{ url_for('auth.register') }}">Create an account</a></p>
+    </section>
+</main>
+{% endblock %}

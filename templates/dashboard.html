@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard — TaskFlow</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/dashboard.css" />
+  <!-- Socket.IO client -->
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <!-- Lucide icons -->
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.265.0/dist/lucide.min.js"></script>
+</head>
+<body>
+
+<!-- ── Sidebar ──────────────────────────────────────────────────────────── -->
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <span class="brand-icon">⬡</span>
+    <span class="brand-name">TaskFlow</span>
+  </div>
+
+  <nav class="sidebar-nav">
+    <a href="#" class="nav-item active" data-filter="all">
+      <span class="nav-icon">▦</span> All Tasks
+    </a>
+    <a href="#" class="nav-item" data-filter="Pending">
+      <span class="nav-icon">◷</span> Pending
+    </a>
+    <a href="#" class="nav-item" data-filter="Completed">
+      <span class="nav-icon">✓</span> Completed
+    </a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="user-info">
+      <div class="avatar">{{ user.username[0].upper() }}</div>
+      <div>
+        <div class="user-name">{{ user.username }}</div>
+        <div class="user-email">{{ user.email }}</div>
+      </div>
+    </div>
+    <button id="logoutBtn" class="btn-logout" title="Logout">⏻</button>
+  </div>
+</aside>
+
+<!-- ── Main ─────────────────────────────────────────────────────────────── -->
+<main class="main">
+
+  <!-- Analytics Bar -->
+  <section class="analytics-bar" id="analyticsBar">
+    <div class="stat-card stat-total">
+      <div class="stat-icon-wrap">◈</div>
+      <div class="stat-meta">
+        <div class="stat-value" id="statTotal" data-value="0">0</div>
+        <div class="stat-label">Total</div>
+      </div>
+    </div>
+    <div class="stat-card stat-done">
+      <div class="stat-icon-wrap">✓</div>
+      <div class="stat-meta">
+        <div class="stat-value" id="statCompleted" data-value="0">0</div>
+        <div class="stat-label">Done</div>
+      </div>
+    </div>
+    <div class="stat-card stat-pending">
+      <div class="stat-icon-wrap">◔</div>
+      <div class="stat-meta">
+        <div class="stat-value" id="statPending" data-value="0">0</div>
+        <div class="stat-label">Pending</div>
+      </div>
+    </div>
+    <div class="stat-card stat-completion">
+      <div class="stat-icon-wrap">⬢</div>
+      <div class="stat-meta">
+        <div class="stat-value" id="statPct" data-value="0">0%</div>
+        <div class="stat-label">Completion</div>
+      </div>
+    </div>
+    <div class="stat-card stat-low">
+      <div class="stat-icon-wrap">◌</div>
+      <div class="stat-meta">
+        <div class="stat-value" id="statLow" data-value="0">0</div>
+        <div class="stat-label">Low Priority</div>
+      </div>
+    </div>
+    <div class="stat-card stat-medium">
+      <div class="stat-icon-wrap">◐</div>
+      <div class="stat-meta">
+        <div class="stat-value" id="statMed" data-value="0">0</div>
+        <div class="stat-label">Medium</div>
+      </div>
+    </div>
+    <div class="stat-card stat-high">
+      <div class="stat-icon-wrap">▲</div>
+      <div class="stat-meta">
+        <div class="stat-value" id="statHigh" data-value="0">0</div>
+        <div class="stat-label">High Priority</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Header -->
+  <div class="content-header">
+    <h2 id="pageTitle">All Tasks</h2>
+    <button class="btn-add" id="openModalBtn">+ New Task</button>
+  </div>
+
+  <!-- Search & Filters -->
+  <div class="search-filter-bar">
+    <div class="search-wrap">
+      <input id="searchInput" placeholder="Search tasks, people, keywords..." />
+      <button class="search-clear hidden" id="searchClear">✕</button>
+    </div>
+    <div class="filter-pills" id="filterPills">
+      <button class="pill active" data-filter="all">All</button>
+      <button class="pill" data-filter="High">High</button>
+      <button class="pill" data-filter="Medium">Medium</button>
+      <button class="pill" data-filter="Low">Low</button>
+      <button class="pill" data-filter="Completed">Completed</button>
+      <button class="pill" data-filter="Pending">Pending</button>
+    </div>
+    <div class="priority-select">
+      <select id="priorityFilter">
+        <option value="">Priority: All</option>
+        <option value="High">High</option>
+        <option value="Medium">Medium</option>
+        <option value="Low">Low</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast hidden"></div>
+
+  <!-- Task List -->
+  <section id="taskList" class="task-list">
+    <div class="empty-state" id="emptyState">
+      <div class="empty-illustration"> 
+        <i data-lucide="clipboard" width="56" height="56"></i>
+      </div>
+      <h3>No tasks yet</h3>
+      <p class="muted">Your dashboard is looking clean — create a task to get started.</p>
+      <div class="empty-actions">
+        <button class="btn-primary" id="openModalBtnEmpty">Create Task</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- ── Create / Edit Modal ──────────────────────────────────────────────── -->
+<div class="modal-overlay hidden" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modalTitle">New Task</h3>
+      <button class="modal-close" id="modalClose">✕</button>
+    </div>
+
+    <div id="modalAlert" class="alert hidden"></div>
+
+    <div class="field">
+      <label>Title *</label>
+      <input type="text" id="taskTitle" placeholder="What needs to be done?" />
+    </div>
+    <div class="field">
+      <label>Description</label>
+      <textarea id="taskDesc" rows="3" placeholder="Optional details…"></textarea>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Priority</label>
+        <select id="taskPriority">
+          <option value="Low">Low</option>
+          <option value="Medium" selected>Medium</option>
+          <option value="High">High</option>
+        </select>
+      </div>
+      <div class="field" id="statusFieldWrap" style="display:none">
+        <label>Status</label>
+        <select id="taskStatus">
+          <option value="Pending">Pending</option>
+          <option value="Completed">Completed</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-secondary" id="modalCancelBtn">Cancel</button>
+      <button class="btn-primary" id="modalSaveBtn">Create Task</button>
+    </div>
+  </div>
+</div>
+
+<script src="/static/js/dashboard.js"></script>
+<script>
+  (function () {
+    const sidebar = document.querySelector(".sidebar");
+    if (!sidebar) return;
+
+    const toggle = document.createElement("button");
+    toggle.className = "btn-add";
+    toggle.type = "button";
+    toggle.textContent = "Menu";
+    toggle.style.position = "fixed";
+    toggle.style.top = "16px";
+    toggle.style.right = "16px";
+    toggle.style.zIndex = "60";
+    toggle.style.display = "none";
+
+    document.body.appendChild(toggle);
+
+    function syncToggle() {
+      toggle.style.display = window.innerWidth <= 980 ? "inline-flex" : "none";
+      if (window.innerWidth > 980) {
+        document.body.classList.remove("sidebar-open");
+      }
+    }
+
+    toggle.addEventListener("click", function () {
+      document.body.classList.toggle("sidebar-open");
+    });
+
+    window.addEventListener("resize", syncToggle);
+    syncToggle();
+  })();
+</script>
+</body>
+</html>

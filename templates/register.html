@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Register — TaskFlow</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/auth.css" />
+</head>
+<body>
+  <div class="auth-wrapper">
+    <div class="brand">
+      <span class="brand-icon">⬡</span>
+      <span class="brand-name">TaskFlow</span>
+    </div>
+
+    <div class="card">
+      <h1>Create account</h1>
+      <p class="subtitle">Start managing your tasks</p>
+
+      <div id="alert" class="alert hidden"></div>
+
+      <form id="registerForm" novalidate>
+        <div class="field">
+          <label for="username">Username</label>
+          <input type="text" id="username" placeholder="yourname" required />
+        </div>
+        <div class="field">
+          <label for="email">Email</label>
+          <input type="email" id="email" placeholder="you@example.com" required />
+        </div>
+        <div class="field">
+          <label for="password">Password</label>
+          <input type="password" id="password" placeholder="min 6 characters" required />
+        </div>
+        <button type="submit" class="btn-primary" id="submitBtn">
+          <span class="btn-text">Create Account</span>
+          <span class="spinner hidden">◌</span>
+        </button>
+      </form>
+
+      <p class="switch-link">Already have an account? <a href="/login">Sign in →</a></p>
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById('registerForm');
+    const alertEl = document.getElementById('alert');
+    const submitBtn = document.getElementById('submitBtn');
+
+    function showAlert(msg, type = 'error') {
+      alertEl.textContent = msg;
+      alertEl.className = `alert ${type}`;
+    }
+
+    function setLoading(loading) {
+      submitBtn.querySelector('.btn-text').classList.toggle('hidden', loading);
+      submitBtn.querySelector('.spinner').classList.toggle('hidden', !loading);
+      submitBtn.disabled = loading;
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const username = document.getElementById('username').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+
+      if (!username || !email || !password) return showAlert('Please fill in all fields.');
+      if (password.length < 6) return showAlert('Password must be at least 6 characters.');
+
+      setLoading(true);
+      try {
+        const res = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, email, password }),
+        });
+        const data = await res.json();
+        if (res.ok) {
+          showAlert('Account created! Redirecting…', 'success');
+          setTimeout(() => window.location.href = '/login', 1000);
+        } else {
+          showAlert(data.error || 'Registration failed.');
+        }
+      } catch {
+        showAlert('Network error. Try again.');
+      } finally {
+        setLoading(false);
+      }
+    });
+  </script>
+</body>
+</html>
